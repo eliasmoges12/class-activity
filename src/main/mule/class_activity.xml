@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="7cc815ed-5e75-4edc-b2ae-a258786324e1" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="5c3697fe-0b97-4806-80fa-e96df92c2aa5" >
+		<http:request-connection host="localhost" port="8081" />
+	</http:request-config>
+	<flow name="PrivateFlow" doc:id="aa346d2f-6181-4ffd-97ee-696edc2fad2f" >
+		<http:request method="GET" doc:name="GET /goodbye" doc:id="82547dad-6676-4444-afa7-c73bc5c19ed0" config-ref="HTTP_Request_configuration" path="/goodbye" responseTimeout="300000">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	"fullname" : attributes.queryParams.fname
+}]]]></http:query-params>
+		</http:request>
+	</flow>
+	<flow name="Flow-A" doc:id="19fc6e80-edc0-480e-a47c-5b2eab394ad7" >
+		<http:listener doc:name="GET /hello" doc:id="e098d782-000e-4fc1-97cb-de8558e0a903" config-ref="HTTP_Listener_config" path="/hello" allowedMethods="GET">
+			<http:response >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"name" : vars.FirstName
+}]]]></http:headers>
+			</http:response>
+			<http:error-response reasonPhrase="Success" />
+		</http:listener>
+		<flow-ref doc:name="Flow Reference" doc:id="c97f0ab6-d0af-43bd-be35-713bcbf8a634" name="Subflow"/>
+		<flow-ref doc:name="Flow Reference" doc:id="da9841af-7854-4800-8833-0b312116f36f" name="PrivateFlow" />
+		<logger level="INFO" doc:name="Payload" doc:id="d6e736c4-a95a-418d-91b8-d52f33f9f45d" message="#['\nMessage: ' ++ payload]" />
+	</flow>
+	<sub-flow name="Subflow" doc:id="a8b31be3-92c8-46c2-8cc1-162653ab0cb3" >
+		<set-payload value="Hello world" doc:name="Hello" doc:id="c76018a9-0f06-4eed-9177-f84a120a0e00" />
+		<set-variable value="#[message.attributes.queryParams.fname]" doc:name="FirstName" doc:id="d2455c85-84e4-4d7b-9107-0caa7bf96017" variableName="FirstName" />
+	</sub-flow>
+	<flow name="Flow-B" doc:id="af3f9191-9c73-45a9-b84a-fb5ff42dc220" >
+		<http:listener doc:name="GET /goodbay" doc:id="ac1e89ef-78de-4e62-bd61-0c5e6debcc8a" config-ref="HTTP_Listener_config" path="/goodbye"/>
+		<set-payload value="#[upper('Goodbye') ++ ' ' ++ (attributes.queryParams.fullname default 'Abrham')]" doc:name="Goodbye" doc:id="f9434d1b-b31b-47c8-bbb9-ad39d1c602a9" />
+		<logger level="INFO" doc:name="Logger" doc:id="c1b07f93-b801-4221-96f4-467f7ae0f361" message="#[attributes.queryParams.fullname]" />
+	</flow>
+</mule>
